@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, user-scalable=no">
+    <meta name="format-detection" content="telephone=no">
+
+    <link rel="stylesheet" href="css/slick.css">
+    <link rel="stylesheet" href="css/dropkick.css">
+    <link rel="stylesheet" href="css/style.min.css">
+    <title></title>
+    
+    <style>
+      .cst-audio{
+          --secondary-color: #14BF11;
+          &-wrap{
+            padding: 31px 40px;
+            background-color: var(--third-color);
+            border-radius: 10px;
+            margin-bottom: 16px;
+            @include flexbox(normal, center);
+            audio{
+              width: 100%;
+              background-color: transparent;
+            }
+          }
+          &__controls{
+            flex: 0 0 55px;
+          }
+          &__progress{
+            flex: 1 1 0;
+            margin: 0 32px;
+            background-color: rgba(30, 30, 30, 0.5);
+            background-clip: content-box;
+            @include space(y, 9px);
+          }
+          &__bar{
+            background-color: var(--secondary-color);
+            background-clip: content-box;
+            position: relative;
+            @include trns;
+            @include size(0, 2px);
+            &:after{
+              background-color: var(--secondary-color);
+              @include pseudo();
+              @include image(20px, 50%);
+              right: 0;
+              top: 50%;
+              transform: translate(50%, -50%);
+            }
+          }
+          &__volume{
+            position: relative;
+            color: var(--secondary-color);
+            .icon{
+              @include size(32px);
+              @include flexbox(center, center);
+            }
+            &:before{
+              border-left: 2px solid;
+              right: 0;
+              top: 0;
+              transform: rotateZ(45deg);
+              transform-origin: top right;
+              @include size(0, 0);
+              @include pseudo();
+              @include trns;
+            }
+            &.muted{
+              color: #ccc;
+              &:before{
+                height: 150%;
+              }
+            }
+          }
+          @include respond-below(sm){
+            &-wrap{
+              padding: 15px 10px;
+            }
+            &__progress{
+              @include m-space(10px);
+            }
+            &__time{
+              padding-right: 5px;
+            }
+            &__bar:after{
+              @include size(15px);
+            }
+            &__volume {
+              .icon {
+                @include size(25px);
+              }
+            }
+          }
+        }
+    </style>
+
+</head>
+<body class="">
+
+  <div class="cst-audio-wrap">
+      <audio class="cst-audio">
+          <source src="https://dl.espressif.com/dl/audio/ff-16b-2c-44100hz.mp3" type="audio/mpeg">
+          <a href="audiofile.mp3">audiofile.mp3</a>
+      </audio>
+
+      <div class="cst-audio__controls">
+          <span class="cst-audio__loading">loading</span>
+          <button class="cst-audio__play" style="display:none">play</button>
+          <button class="cst-audio__pause" style="display:none" >pause</button>
+      </div>
+      <div class="cst-audio__time">
+          <span class="cst-audio__current-time">00:00</span> / <span class="cst-audio__duration">00:00</span>
+      </div>
+      <div class="cst-audio__progress">
+          <div class="cst-audio__bar"></div>
+      </div>
+      <div class="cst-audio__volume">
+          <svg class="icon">
+              <use xlink:href="#volume"></use>
+          </svg>
+      </div>
+  </div>
+
+
+<script>
+
+window.onload = function(){
+
+    // custom audio
+    const cstAudio = document.querySelectorAll(".cst-audio");
+    for(let audio of cstAudio){
+        const audioParent = audio.parentElement;
+        const play = audioParent.querySelector(".cst-audio__play");
+        const pause = audioParent.querySelector(".cst-audio__pause");
+        const loading = audioParent.querySelector(".cst-audio__loading");
+        const progress = audioParent.querySelector(".cst-audio__progress");
+        const bar = audioParent.querySelector(".cst-audio__bar");
+        const volume = audioParent.querySelector(".cst-audio__volume");
+        const currentTime = audioParent.querySelector(".cst-audio__current-time");
+        const duration = audioParent.querySelector(".cst-audio__duration");
+
+        function displayControls() {
+            loading.style.display = "none";
+            play.style.display = "block";
+        }
+
+        function convertTime(seconds){
+            return new Date(seconds * 1000).toISOString().slice(14, 19);
+        }
+
+        // check that the media is ready before displaying the controls
+        if (audio.paused) {
+            displayControls();
+        } else {
+            // not ready yet - wait for canplay event
+            audio.addEventListener('canplay', function() {
+                displayControls();
+            });
+        }
+
+        // setting audio duration
+        duration.textContent = convertTime(Math.round(audio.duration));
+
+        play.addEventListener('click', function() {
+            audio.play();
+            play.style.display = "none";
+            pause.style.display = "block";
+        });
+
+        pause.addEventListener('click', function() {
+            audio.pause();
+            pause.style.display = "none";
+            play.style.display = "block";
+        });
+
+        // display progress
+        audio.addEventListener('timeupdate', function() {
+            //sets the percentage
+            setInterval(() => {
+                currentTime.textContent = convertTime(Math.round(this.currentTime));
+            }, 1000);
+            bar.style.width = parseInt(((audio.currentTime / audio.duration) * 100), 10) + "%";
+        });
+
+        progress.addEventListener('click', function(e) {
+            // calculate the normalized position clicked
+            const clickPosition = (e.pageX  - this.offsetLeft) / this.offsetWidth;
+            const clickTime = clickPosition * audio.duration;
+
+            // move the playhead to the correct position
+            audio.currentTime = clickTime;
+        });
+
+        // mute/unmute
+        volume.addEventListener('click', function(e) {
+            if(audio.muted){
+                this.classList.remove("muted");
+            }else{
+                this.classList.add("muted");
+            }
+            audio.muted = !audio.muted;
+        });
+    }
+    
+}
+</script>
+
+</body>
